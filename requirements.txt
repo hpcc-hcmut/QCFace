@@ -1,0 +1,15 @@
+tqdm
+numpy
+opencv-python
+pillow
+pandas
+scipy
+scikit-image
+scikit-learn
+matplotlib
+albumentations==1.0.3
+loguru
+termcolor
+menpo
+prettytable
+torchshard
