@@ -10,7 +10,7 @@
 - [Department of Imaging, Monash Health, Victoria, Australia.]() 
 
 ---
-[Paper]()
+[Paper](https://arxiv.org/abs/2510.15289)
 **|**
 [Supplementary Material]()
 **|**
@@ -209,9 +209,11 @@ bash ./tinyface.sh
 
 ## Citation
 ```
-@article{doanqcface,
+@article{doan2025qcface,
   title={QCFace: Image Quality Control for boosting Face Representation \& Recognition},
-  author={Doan-Ngo, Duc-Phuong and Diep, Thanh-Dang and Nguyen-Duc, Thanh and Thanh-Sach, LE and Thoai, Nam}
+  author={Doan-Ngo, Duc-Phuong and Diep, Thanh-Dang and Nguyen-Duc, Thanh and LE, Thanh-Sach and Thoai, Nam},
+  journal={arXiv preprint arXiv:2510.15289},
+  year={2025}
 }
 ```
 
