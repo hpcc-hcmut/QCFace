@@ -202,9 +202,9 @@ bash ./tinyface.sh
 </p>
 
 ---
-## TODO
-- [ ] Add pretrained model
-- [ ] Add training log files
+## Pretrained Models
+[QCFace-Arc-IR100](https://lnd3-my.sharepoint.com/:u:/g/personal/phuongdoan_lnd3_onmicrosoft_com/IQBEEZVCfRINSqJosdFOAa-ZAcNxVydaFo0-tOAlD0Rkonk?e=qn7DPR)
+[QCFace-Arc-IR18](https://lnd3-my.sharepoint.com/:u:/g/personal/phuongdoan_lnd3_onmicrosoft_com/IQCbPo97iYFHQJxTr-Bb9LpdAVH3RzKlpUWRZBTblfoCbtc?e=4Vqeum)
 
 
 ## Citation
