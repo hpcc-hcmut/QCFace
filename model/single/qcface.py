@@ -10,9 +10,6 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 
 def find_optim_val_fnc(u_a=100, l_a=1):
-    # f(z, p)
-    def _qcfnc(n, p, ua, la, k1):
-        return k1 * p * (1/n + n / (ua**2)) + (1 - p) * (1/n + n / (la**2))
     # z*(p)    
     def _optpt(p, ua, la, k1):
         return sqrt(((k1-1)*p + 1) / ((k1 / (ua**2) - 1 / (la**2)) * p + 1 / (la**2)))
@@ -122,14 +119,14 @@ class QCFace(nn.Module):
             # Easy probabilities are the probabilities of GT class
             easy_probs = (cos_theta_detach*self.scale).softmax(dim=1) # [N, embed_size]
             indices = (list(range(embeds.size(0))), labels.tolist())
-            easy_probs = easy_probs[indices] # [N]
+            easy_probs = easy_probs[indices].unsqueeze(1) # [N, 1]
             # Get z*
-            opt_norm = self._optpt(easy_probs, self.ua, self.la, self.k) # [N]
+            opt_norm = self._optpt(easy_probs, self.ua, self.la, self.k) # [N, 1]
             # Get Lqc*
-            opt_norm_loss = self._qcfnc(opt_norm, easy_probs, self.ua, self.la, self.k) # [N]
+            opt_norm_loss = self._qcfnc(opt_norm, easy_probs, self.ua, self.la, self.k) # [N, 1]
 
         # Get norm
-        norm_loss = self._qcfnc(norms, easy_probs, self.ua, self.la, self.k) - opt_norm_loss # [N]
+        norm_loss = self._qcfnc(norms, easy_probs, self.ua, self.la, self.k) - opt_norm_loss # [N, 1]
         # Get reduced norm loss
         norm_loss = norm_loss.mean()
 
