@@ -73,53 +73,43 @@ class QCFace(nn.Module):
         # Get cos(theta)
         cos_theta = torch.mm(embeds_norm, weight_norm) # [N, num_class]
         cos_theta = cos_theta.clamp(-1, 1) # [N, num_class]
+        cos_theta_cache = cos_theta.clone().detach()
+        # Convert labels --> one_hot 
+        one_hot = torch.zeros_like(cos_theta)
+        one_hot.scatter_(1, labels.view(-1, 1), 1.0)
 
         # For identification prediction
         if labels is None:
             return cos_theta
 
-        # Get indices of GT 
-        indices = (list(range(embeds.size(0))), labels.tolist())
+        target_cos_theta = cos_theta[torch.arange(0, embeds.size(0)), labels.view(-1)].view(-1, 1) # [N, 1]
+        target_sin_theta = torch.sqrt(1.0 - torch.pow(target_cos_theta, 2))
+        target_cos_theta_m = target_cos_theta*self.cos_m - target_sin_theta*self.sin_m
+        mask = cos_theta > target_cos_theta_m # Get hard sample mask
+        target_cos_theta_m = torch.where(target_cos_theta > self.th, target_cos_theta_m, target_cos_theta - self.mm)
+        hard_samples = cos_theta[mask]
+
         with torch.no_grad():
-            cos_theta_detach = cos_theta.clone().detach()
-            self.t = cos_theta_detach[indices].mean() * 0.01 + (1-0.01) * self.t
+            self.t = target_cos_theta.mean() * 0.01 + (1-0.01) * self.t
 
-        sin_theta = torch.sqrt(1.0 - torch.pow(cos_theta, 2))
-        # cos(theta+m) = cos(theta)*cos(m) - sin(theta)*sin(m)
-        cos_theta_m = cos_theta*self.cos_m - sin_theta*self.sin_m
-        # easy margin
-        cos_theta_m = torch.where(cos_theta > 0, cos_theta_m, cos_theta)
-        # hard margin
-        # theta not in range [0, pi] ---> use cosface instead
-        # cos_theta_m = torch.where(cos_theta > self.th, cos_theta_m, cos_theta-self.mm)
-        
-        # Convert labels --> one_hot 
-        one_hot = torch.zeros_like(cos_theta)
-        one_hot.scatter_(1, labels.view(-1, 1), 1.0)
-        # Replace the GT cosine by cos(theta+m)
-        cos_theta_output = (one_hot*cos_theta_m) + ((1.0-one_hot)*cos_theta)
-
-         # Get hardsample
-        mask = cos_theta > cos_theta_m
-        hard_example = cos_theta[mask]
         # Calculate curricular softmax face for mis-classified classes
-        cos_theta_output[mask] = hard_example * (self.t + hard_example)
+        cos_theta[mask] = hard_samples * (self.t + hard_samples)
 
         # Get scaled softmax face
-        cos_theta_output *= self.scale
-        cos_theta = cos_theta*self.scale
+        scaled_cos_theta_m = cos_theta * self.scale
+        scaled_cos_theta = cos_theta_cache - self.scale
 
         # Get norm of feature vectors
         norms = torch.norm(embeds, dim=1, keepdim=True) # [N, 1]
 
         # For the identification training process
         if not self.norm_training_flag: 
-            return [cos_theta, cos_theta_output], norms, 0, one_hot
+            return [scaled_cos_theta, scaled_cos_theta_m], norms, 0, one_hot
         
         # For the norm training process
         with torch.no_grad():
             # Easy probabilities are the probabilities of GT class
-            easy_probs = (cos_theta_detach*self.scale).softmax(dim=1) # [N, embed_size]
+            easy_probs = scaled_cos_theta.softmax(dim=1) # [N, embed_size]
             indices = (list(range(embeds.size(0))), labels.tolist())
             easy_probs = easy_probs[indices].unsqueeze(1) # [N, 1]
             # Get z*
@@ -131,4 +121,4 @@ class QCFace(nn.Module):
         norm_loss = self._qcfnc(norms, easy_probs, self.ua, self.la, self.k) - opt_norm_loss # [N, 1]
         norm_loss = norm_loss.mean()
 
-        return [cos_theta, cos_theta_output], norms, norm_loss, one_hot
+        return [scaled_cos_theta, scaled_cos_theta_m], norms, norm_loss, one_hot
