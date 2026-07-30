@@ -30,7 +30,9 @@ class QCFace(nn.Module):
     def __init__(self,
                  embed_size=512,
                  num_classes=1000,
-                 scale=64., 
+                 is_am=False,
+                 scale=32.,
+                 mv_weight=0.2,  
                  ua=100., 
                  la=1,
                  m=0.5):
@@ -45,6 +47,8 @@ class QCFace(nn.Module):
         self.sin_m = math.sin(m)
         self.th = math.cos(math.pi-m)
         self.mm = math.sin(math.pi-m)*m
+        self.is_am = is_am
+        self.mv_weight = mv_weight
 
         self.norm_training_flag = False
 
@@ -74,13 +78,14 @@ class QCFace(nn.Module):
         cos_theta = torch.mm(embeds_norm, weight_norm) # [N, num_class]
         cos_theta = cos_theta.clamp(-1, 1) # [N, num_class]
         cos_theta_cache = cos_theta.clone().detach()
-        # Convert labels --> one_hot 
-        one_hot = torch.zeros_like(cos_theta)
-        one_hot.scatter_(1, labels.view(-1, 1), 1.0)
 
         # For identification prediction
         if labels is None:
             return cos_theta
+        
+        # Convert labels --> one_hot 
+        one_hot = torch.zeros_like(cos_theta)
+        one_hot.scatter_(1, labels.view(-1, 1), 1.0)
 
         target_cos_theta = cos_theta[torch.arange(0, labels.size(0)), labels].view(-1, 1) # [N, 1]
         if self.is_am:  # AM

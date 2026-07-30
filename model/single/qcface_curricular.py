@@ -74,13 +74,14 @@ class QCFace(nn.Module):
         cos_theta = torch.mm(embeds_norm, weight_norm) # [N, num_class]
         cos_theta = cos_theta.clamp(-1, 1) # [N, num_class]
         cos_theta_cache = cos_theta.clone().detach()
-        # Convert labels --> one_hot 
-        one_hot = torch.zeros_like(cos_theta)
-        one_hot.scatter_(1, labels.view(-1, 1), 1.0)
 
         # For identification prediction
         if labels is None:
             return cos_theta
+        
+        # Convert labels --> one_hot 
+        one_hot = torch.zeros_like(cos_theta)
+        one_hot.scatter_(1, labels.view(-1, 1), 1.0)
 
         target_cos_theta = cos_theta[torch.arange(0, embeds.size(0)), labels.view(-1)].view(-1, 1) # [N, 1]
         target_sin_theta = torch.sqrt(1.0 - torch.pow(target_cos_theta, 2))
